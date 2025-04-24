@@ -1,0 +1,666 @@
+-- Кинотеатрлар (Cinemas)
+CREATE TABLE cinemas (
+    id SERIAL PRIMARY KEY,
+    name VARCHAR(100) NOT NULL UNIQUE,
+    address TEXT NOT NULL
+);
+
+INSERT INTO cinemas (name, address) VALUES
+('Chaplin Mega Alma-Ata', 'Алматы қ., Розыбакиев көшесі, 263'),
+('Kinopark 11 IMAX', 'Астана қ., Қабанбай батыр даңғылы, 62'),
+('Arman Cinema', 'Алматы қ., Абылай хан даңғылы, 92');
+
+
+-- Залдар (Halls)
+CREATE TABLE halls (
+    id SERIAL PRIMARY KEY,
+    cinema_id INT NOT NULL,
+    hall_number INT NOT NULL,
+    capacity INT CHECK (capacity > 0) NOT NULL,
+    FOREIGN KEY (cinema_id) REFERENCES cinemas(id) ON DELETE CASCADE
+);
+
+INSERT INTO halls (cinema_id, hall_number, capacity) VALUES
+(1, 1, 150),
+(1, 2, 200),
+(2, 1, 180),
+(3, 1, 100);
+
+-- Фильмдер (Movies)
+CREATE TABLE movies (
+    id SERIAL PRIMARY KEY,
+    title VARCHAR(100) NOT NULL UNIQUE,
+    duration INT CHECK (duration > 0) NOT NULL,
+    release_date DATE NOT NULL,
+    rating DECIMAL(3,1) CHECK (rating BETWEEN 0 AND 10)
+);
+
+INSERT INTO movies (title, duration, release_date, rating) VALUES
+('Қазақша бизнес Кореяда', 120, '2024-03-01', 8.5),
+('Алдар Көсе', 90, '2024-02-20', 7.2),
+('Балуан Шолақ', 110, '2023-12-15', 7.8);
+
+
+-- Жанрлар (Genres)
+CREATE TABLE genres (
+    id SERIAL PRIMARY KEY,
+    name VARCHAR(50) NOT NULL UNIQUE
+);
+
+INSERT INTO genres (name) VALUES
+('Комедия'),
+('Драма'),
+('Тарихи'),
+('Фантастика');
+
+
+-- Режиссерлер (Directors)
+CREATE TABLE directors (
+    id SERIAL PRIMARY KEY,
+    name VARCHAR(100) NOT NULL
+);
+
+
+-- Қызметкерлер (Employees)
+CREATE TABLE employees (
+    id SERIAL PRIMARY KEY,
+    first_name VARCHAR(50) NOT NULL,
+    last_name VARCHAR(50) NOT NULL,
+    position VARCHAR(100) NOT NULL,
+    salary DECIMAL(10,2) CHECK (salary > 0) NOT NULL,
+    hire_date DATE NOT NULL
+);
+
+INSERT INTO employees (first_name, last_name, position, salary, hire_date) VALUES
+('Айбек', 'Кенжебек', 'Кассир', 200000, '2023-06-01'),
+('Гүлназ', 'Әбілқасым', 'Менеджер', 350000, '2022-11-15');
+
+
+-- Актерлер (Actors)
+CREATE TABLE actors (
+    id SERIAL PRIMARY KEY,
+    name VARCHAR(100) NOT NULL
+);
+
+-- Сеанстар (Sessions)
+CREATE TABLE sessions (
+    id SERIAL PRIMARY KEY,
+    movie_id INT NOT NULL,
+    hall_id INT NOT NULL,
+    start_time TIMESTAMP NOT NULL,
+    price DECIMAL(10,2) CHECK (price > 0) NOT NULL,
+    FOREIGN KEY (movie_id) REFERENCES movies(id) ON DELETE CASCADE,
+    FOREIGN KEY (hall_id) REFERENCES halls(id) ON DELETE CASCADE
+);
+
+INSERT INTO sessions (id, movie_id, hall_id, start_time, price) VALUES
+(1, 1, 1, '2024-03-15 14:30:00', 2500.00),
+(2, 2, 1, '2024-03-16 18:00:00', 3000.00),
+(3, 3, 2, '2024-03-17 20:00:00', 3500.00),
+(4, 1, 3, '2024-03-18 16:00:00', 4000.00),
+(5, 2, 3, '2024-03-19 19:30:00', 4500.00);
+
+
+-- Билеттер (Tickets)
+CREATE TABLE tickets (
+    id SERIAL PRIMARY KEY,
+    session_id INT NOT NULL,
+    seat_number INT NOT NULL,
+    price DECIMAL(10,2) CHECK (price > 0) NOT NULL,
+    status VARCHAR(10) CHECK (status IN ('reserved', 'sold')) NOT NULL,
+    FOREIGN KEY (session_id) REFERENCES sessions(id) ON DELETE CASCADE
+);
+
+INSERT INTO tickets (session_id, seat_number, price, status) VALUES
+(1, 12, 2500.00, 'reserved'),
+(1, 15, 2500.00, 'sold'),
+(2, 7, 3000.00, 'reserved'),
+(2, 10, 3000.00, 'sold'),
+(3, 21, 3500.00, 'sold'),
+(3, 22, 3500.00, 'reserved'),
+(4, 5, 4000.00, 'sold'),
+(4, 8, 4000.00, 'reserved'),
+(5, 33, 4500.00, 'sold'),
+(5, 34, 4500.00, 'reserved');
+
+-- Пайдаланушылар (Users)
+CREATE TABLE users (
+    id SERIAL PRIMARY KEY,
+    first_name VARCHAR(50) NOT NULL,
+    last_name VARCHAR(50) NOT NULL,
+    email VARCHAR(100) UNIQUE NOT NULL,
+    role VARCHAR(50) CHECK (role IN ('admin', 'cashier', 'customer')) NOT NULL
+);
+
+INSERT INTO users (first_name, last_name, email, role) VALUES
+('Алихан', 'Нұрбек', 'alihan@mail.kz', 'customer'),
+('Диана', 'Қайратқызы', 'diana@mail.kz', 'cashier');
+
+
+
+-- Төлемдер (Payments)
+CREATE TABLE payments (
+    id SERIAL PRIMARY KEY,
+    ticket_id INT NOT NULL,
+    amount DECIMAL(10,2) CHECK (amount > 0) NOT NULL,
+    payment_date TIMESTAMP NOT NULL,
+    payment_method VARCHAR(50) CHECK (payment_method IN ('card', 'cash', 'online')) NOT NULL,
+    FOREIGN KEY (ticket_id) REFERENCES tickets(id) ON DELETE CASCADE
+);
+
+-- Тапсырыстар (Orders)
+CREATE TABLE orders (
+    id SERIAL PRIMARY KEY,
+    user_id INT NOT NULL,
+    payment_id INT NOT NULL,
+    order_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+    FOREIGN KEY (payment_id) REFERENCES payments(id) ON DELETE CASCADE
+);
+
+-- Бағалар (Prices)
+CREATE TABLE prices (
+    id SERIAL PRIMARY KEY,
+    session_id INT NOT NULL,
+    amount DECIMAL(10,2) CHECK (amount > 0) NOT NULL,
+    FOREIGN KEY (session_id) REFERENCES sessions(id) ON DELETE CASCADE
+);
+
+-- Орындар (Seats)
+CREATE TABLE seats (
+    id SERIAL PRIMARY KEY,
+    hall_id INT NOT NULL,
+    seat_number INT NOT NULL,
+    FOREIGN KEY (hall_id) REFERENCES halls(id) ON DELETE CASCADE
+);
+
+
+-- Фильм трейлерлері (MovieTrailers)
+CREATE TABLE movie_trailers (
+    id SERIAL PRIMARY KEY,
+    movie_id INT NOT NULL,
+    trailer_url TEXT NOT NULL,
+    FOREIGN KEY (movie_id) REFERENCES movies(id) ON DELETE CASCADE
+);
+
+INSERT INTO movie_trailers (movie_id, trailer_url) VALUES
+(1, 'https://www.youtube.com/watch?v=EXAMPLE1'),
+(2, 'https://www.youtube.com/watch?v=EXAMPLE2'),
+(3, 'https://www.youtube.com/watch?v=EXAMPLE3');
+
+
+
+-----ДҚ-ны нормализациялау (Нормалды формалар) 
+---- 2
+
+---2NF
+DROP TABLE tickets CASCADE;
+
+CREATE TABLE tickets (
+    id SERIAL PRIMARY KEY,
+    session_id INT NOT NULL,
+    seat_number INT NOT NULL,
+    status VARCHAR(10) CHECK (status IN ('reserved', 'sold')) NOT NULL,
+    FOREIGN KEY (session_id) REFERENCES sessions(id) ON DELETE CASCADE
+);
+
+DROP TABLE prices;
+
+
+
+
+--- 3NF 
+-- 1) Жаңа positions кестесі құру:
+CREATE TABLE positions (
+    id SERIAL PRIMARY KEY,
+    name VARCHAR(100) NOT NULL UNIQUE
+);
+INSERT INTO positions (name) VALUES
+('Кассир'),
+('Менеджер');
+
+DROP TABLE employees CASCADE;
+
+CREATE TABLE employees (
+    id SERIAL PRIMARY KEY,
+    first_name VARCHAR(50) NOT NULL,
+    last_name VARCHAR(50) NOT NULL,
+    position_id INT NOT NULL,
+    salary DECIMAL(10,2) CHECK (salary > 0) NOT NULL,
+    hire_date DATE NOT NULL,
+    FOREIGN KEY (position_id) REFERENCES positions(id) ON DELETE RESTRICT
+); --Бұл транзитивті тәуелділікті жойды.
+
+--- 2) cinema_id өрісі қосылды:
+DROP TABLE employees CASCADE;
+
+CREATE TABLE employees (
+    id SERIAL PRIMARY KEY,
+    first_name VARCHAR(50) NOT NULL,
+    last_name VARCHAR(50) NOT NULL,
+    position_id INT NOT NULL,
+    cinema_id INT NOT NULL,
+    salary DECIMAL(10,2) CHECK (salary > 0) NOT NULL,
+    hire_date DATE NOT NULL,
+    FOREIGN KEY (position_id) REFERENCES positions(id) ON DELETE RESTRICT,
+    FOREIGN KEY (cinema_id) REFERENCES cinemas(id) ON DELETE RESTRICT
+);
+INSERT INTO employees (first_name, last_name, position_id, cinema_id, salary, hire_date) VALUES
+('Айбек', 'Кенжебек', 1, 1, 200000, '2023-06-01'),
+('Гүлназ', 'Әбілқасым', 2, 2, 350000, '2022-11-15');
+
+
+
+
+--- қосымша жетілдіру 
+-- 1)Фильмдер режиссерлер арасындағы байланыс:
+CREATE TABLE movie_directors (
+    movie_id INT NOT NULL,
+    director_id INT NOT NULL,
+    PRIMARY KEY (movie_id, director_id),
+    FOREIGN KEY (movie_id) REFERENCES movies(id) ON DELETE CASCADE,
+    FOREIGN KEY (director_id) REFERENCES directors(id) ON DELETE CASCADE
+);
+
+INSERT INTO movie_directors (movie_id, director_id) VALUES
+(1, 1), -- Нұртас Адамбай для "Қазақша бизнес Кореяда"
+(3, 2); -- Ақан Сатаев для "Балуан Шолақ"
+
+--2)Улучшение таблицы seats:
+DROP TABLE seats CASCADE;
+
+CREATE TABLE seats (
+    id SERIAL PRIMARY KEY,
+    hall_id INT NOT NULL,
+    seat_number INT NOT NULL,
+    UNIQUE (hall_id, seat_number),
+    FOREIGN KEY (hall_id) REFERENCES halls(id) ON DELETE CASCADE
+);
+
+INSERT INTO seats (hall_id, seat_number)
+SELECT 1, generate_series(1, 150);
+
+
+
+----- Процедуралар жəне қолданушы функциясы 
+---1.Əртүрлі DML операцияларын орындайтын процедуралар құрастыру, тестілеу 
+-- Процедура 1. Жаңа сеанс қосу (INSERT)
+CREATE OR REPLACE PROCEDURE add_session(
+    p_movie_id INT,
+    p_hall_id INT,
+    p_start_time TIMESTAMP,
+    p_price DECIMAL(10,2)
+)
+LANGUAGE plpgsql
+AS $$
+BEGIN
+    -- Фильм мен залдың бар екенін тексеру
+    IF NOT EXISTS (SELECT 1 FROM movies WHERE id = p_movie_id) THEN
+        RAISE EXCEPTION 'Фильм (ID: %) табылмады!', p_movie_id;
+    END IF;
+    
+    IF NOT EXISTS (SELECT 1 FROM halls WHERE id = p_hall_id) THEN
+        RAISE EXCEPTION 'Зал (ID: %) табылмады!', p_hall_id;
+    END IF;
+    
+    -- Бағаның жарамдылығын тексеру
+    IF p_price <= 0 THEN
+        RAISE EXCEPTION 'Баға (%) нөлден үлкен болуы керек!', p_price;
+    END IF;
+    
+    -- Жаңа сеанс қосу
+    INSERT INTO sessions (movie_id, hall_id, start_time, price)
+    VALUES (p_movie_id, p_hall_id, p_start_time, p_price);
+    
+    RAISE NOTICE 'Сеанс сәтті қосылды: фильм %, зал %, уақыт %', p_movie_id, p_hall_id, p_start_time;
+END;
+$$;
+-- Процедураны шақыру
+CALL add_session(1, 1, '2024-03-20 15:00:00', 2800.00);
+-- Нәтижені тексеру
+SELECT * FROM sessions WHERE movie_id = 1 AND hall_id = 1 AND start_time = '2024-03-20 15:00:00';
+
+
+-- Процедура 2
+CREATE OR REPLACE PROCEDURE update_ticket_prices(
+    p_session_id INT
+)
+LANGUAGE plpgsql
+AS $$
+DECLARE
+    v_session_price DECIMAL(10,2);
+BEGIN
+    -- Сеанстың бар екенін тексеру
+    IF NOT EXISTS (SELECT 1 FROM sessions WHERE id = p_session_id) THEN
+        RAISE EXCEPTION 'Сеанс (ID: %) табылмады!', p_session_id;
+    END IF;
+    
+    -- Сеанстың бағасын алу
+    SELECT price INTO v_session_price
+    FROM sessions
+    WHERE id = p_session_id;
+    
+    -- Билеттердің бағасын жаңарту
+    UPDATE tickets
+    SET price = v_session_price
+    WHERE session_id = p_session_id;
+    
+    RAISE NOTICE 'Сеанс (ID: %) билеттерінің бағасы жаңартылды: %', p_session_id, v_session_price;
+END;
+$$;
+-- Процедураны шақыру
+CALL update_ticket_prices(1);
+
+-- Нәтижені тексеру
+SELECT * FROM tickets WHERE session_id = 1;
+
+
+-- Процедура 3: Пайдаланушыны жою (DELETE)
+CREATE OR REPLACE PROCEDURE delete_user(
+    p_user_id INT
+)
+LANGUAGE plpgsql
+AS $$
+BEGIN
+    -- Пайдаланушының бар екенін тексеру
+    IF NOT EXISTS (SELECT 1 FROM users WHERE id = p_user_id) THEN
+        RAISE EXCEPTION 'Пайдаланушы (ID: %) табылмады!', p_user_id;
+    END IF;
+    
+    -- Пайдаланушының тапсырыстары бар-жоғын тексеру
+    IF EXISTS (SELECT 1 FROM orders WHERE user_id = p_user_id) THEN
+        RAISE EXCEPTION 'Пайдаланушы (ID: %) тапсырыстары бар, жою мүмкін емес!', p_user_id;
+    END IF;
+    
+    -- Пайдаланушыны жою
+    DELETE FROM users WHERE id = p_user_id;
+    
+    RAISE NOTICE 'Пайдаланушы (ID: %) сәтті жойылды.', p_user_id;
+END;
+$$;
+-- Жаңа пайдаланушы қосу (тест үшін)
+INSERT INTO users (first_name, last_name, email, role) 
+VALUES ('Бекзат', 'Серіков', 'bekzat@mail.kz', 'customer') RETURNING id; 
+-- Процедураны шақыру
+CALL delete_user(3);
+-- Нәтижені тексеру
+SELECT * FROM users WHERE id = 3;
+
+
+
+---- 2.	Қолданушы функциясын құрастыру, тексеру. 
+-- Функция 1: Сеанс билетінің бағасын алу
+CREATE OR REPLACE FUNCTION get_ticket_price(
+p_session_id INT)
+RETURNS DECIMAL(10,2)
+LANGUAGE plpgsql
+AS $$
+DECLARE
+    v_price DECIMAL(10,2);
+BEGIN
+    -- Сеанстың бар екенін тексеру
+    IF NOT EXISTS (SELECT 1 FROM sessions WHERE id = p_session_id) THEN
+        RAISE EXCEPTION 'Сеанс (ID: %) табылмады!', p_session_id;
+    END IF;
+    
+    -- Бағаны алу
+    SELECT price INTO v_price
+    FROM sessions
+    WHERE id = p_session_id;
+    
+    RETURN v_price;
+END;
+$$;
+-- Функцияны шақыру
+SELECT get_ticket_price(1);
+-- Нәтижені тексеру
+SELECT id, movie_id, hall_id, price FROM sessions WHERE id = 1;
+
+
+-- Функция 2: Сеансқа билеттердің жалпы санын есептеу
+CREATE OR REPLACE FUNCTION get_ticket_count(
+    p_session_id INT
+)
+RETURNS INT
+LANGUAGE plpgsql
+AS $$
+DECLARE
+    v_ticket_count INT;
+BEGIN
+    -- Подсчет билетов для указанного сеанса
+    SELECT COUNT(*) INTO v_ticket_count
+    FROM tickets
+    WHERE session_id = p_session_id;
+    
+    -- Возврат результата
+    RETURN v_ticket_count;
+END;
+$$;
+-- Пример использования функции:
+SELECT get_ticket_count(1);
+
+
+-- Функция 3: пайдаланушының толық атын алу
+CREATE OR REPLACE FUNCTION get_user_full_name(
+    p_user_id INT
+)
+RETURNS VARCHAR
+LANGUAGE plpgsql
+AS $$
+DECLARE
+    v_full_name VARCHAR;
+BEGIN
+    -- Проверка, существует ли пользователь
+    IF NOT EXISTS (SELECT 1 FROM users WHERE id = p_user_id) THEN
+        RAISE EXCEPTION 'Пользователь с ID % не найден!', p_user_id;
+    END IF;
+
+    -- Получение полного имени
+    SELECT CONCAT(first_name, ' ', last_name) INTO v_full_name
+    FROM users
+    WHERE id = p_user_id;
+
+    -- Возврат полного имени
+    RETURN v_full_name;
+END;
+$$;
+-- Пример использования функции:
+SELECT get_user_full_name(1);
+
+
+
+
+----- Триггерлер 
+---- 1. Жүйелік триггері: фильмді өзгертуді өшіріңіз
+CREATE OR REPLACE FUNCTION prevent_movie_update()
+RETURNS TRIGGER
+LANGUAGE plpgsql
+AS $$
+BEGIN
+    RAISE EXCEPTION 'Обновление записей о фильмах запрещено!';
+    RETURN NULL;
+END;
+$$;
+
+CREATE TRIGGER movie_update_restriction
+BEFORE UPDATE ON movies
+FOR EACH ROW
+EXECUTE FUNCTION prevent_movie_update();
+
+-- Попытка обновления
+UPDATE movies SET title = 'New Title' WHERE id = 1;
+
+
+-- 2. Лог-триггерлер: Жаңа пайдаланушылар туралы ақпаратты журнал кестесіне сақтайды
+CREATE TABLE user_logs (
+    id SERIAL PRIMARY KEY,
+    user_id INT NOT NULL,
+    action VARCHAR(50) NOT NULL,
+    log_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+
+CREATE OR REPLACE FUNCTION log_user_addition()
+RETURNS TRIGGER
+LANGUAGE plpgsql
+AS $$
+BEGIN
+    INSERT INTO user_logs (user_id, action)
+    VALUES (NEW.id, 'User Added');
+    RETURN NEW;
+END;
+$$;
+
+CREATE TRIGGER log_user_trigger
+AFTER INSERT ON users
+FOR EACH ROW
+EXECUTE FUNCTION log_user_addition();
+
+-- Проверка таблицы логов
+SELECT * FROM user_logs WHERE user_id = 2; 
+
+
+-- 3. Оператор триггері: билет күйін автоматты түрде жаңарту
+CREATE OR REPLACE FUNCTION auto_update_ticket_status()
+RETURNS TRIGGER
+LANGUAGE plpgsql
+AS $$
+BEGIN
+    UPDATE tickets
+    SET status = 'sold'
+    WHERE id = NEW.ticket_id;
+    RETURN NEW;
+END;
+$$;
+CREATE TRIGGER payment_ticket_status
+AFTER INSERT ON payments
+FOR EACH ROW
+EXECUTE FUNCTION auto_update_ticket_status();
+-- Проверка статуса билета
+SELECT status FROM tickets WHERE id = 1;
+
+
+-- 4. Жол триггері: сеансты жоюды басқару
+CREATE OR REPLACE FUNCTION prevent_session_deletion()
+RETURNS TRIGGER
+LANGUAGE plpgsql
+AS $$
+BEGIN
+    IF EXISTS (SELECT 1 FROM tickets WHERE session_id = OLD.id) THEN
+        RAISE EXCEPTION 'Невозможно удалить сеанс с проданными билетами!';
+    END IF;
+    RETURN OLD;
+END;
+$$;
+
+CREATE TRIGGER session_deletion_check
+BEFORE DELETE ON sessions
+FOR EACH ROW
+EXECUTE FUNCTION prevent_session_deletion();
+-- Вставка данных для тестирования
+INSERT INTO sessions (id, movie_id, hall_id, start_time, price) VALUES
+(8, 3, 2, '2024-08-15 14:30:00', 2500.00);
+INSERT INTO tickets (session_id, seat_number, price, status) VALUES
+(8, 12, 2500.00, 'reserved');
+-- Попытка удаления
+DELETE FROM sessions WHERE id = 8;
+
+
+-- 5. INSTEAD OF триггер: Вставка в представление
+CREATE VIEW active_users AS
+SELECT id, first_name, last_name, email
+FROM users
+WHERE role = 'customer';
+
+CREATE OR REPLACE FUNCTION insert_into_active_users()
+RETURNS TRIGGER
+LANGUAGE plpgsql
+AS $$
+BEGIN
+    INSERT INTO users (first_name, last_name, email, role)
+    VALUES (NEW.first_name, NEW.last_name, NEW.email, 'customer');
+    RETURN NEW;
+END;
+$$;
+
+CREATE TRIGGER active_users_insert
+INSTEAD OF INSERT ON active_users
+FOR EACH ROW
+EXECUTE FUNCTION insert_into_active_users();
+
+-- Попытка вставки в представление
+INSERT INTO active_users (first_name, last_name, email) 
+VALUES ('Bota', 'Gani', 'bota@g.com');
+
+-- Проверка таблицы пользователей
+SELECT * FROM users WHERE email = 'bota@g.com';
+-- Ожидается запись с role = 'customer'
+
+
+
+
+
+-----Транзакциялар 
+--a) Өзгерістерді сақтайтын транзакция:
+BEGIN;
+
+-- Мысалы, жаңа пайдаланушы қосу
+INSERT INTO users (first_name, last_name, email, role)
+VALUES ('Айжан', 'Смағұлова', 'aizhan@mail.kz', 'customer');
+
+-- Мысалы, жаңа сеанс қосу
+INSERT INTO sessions (movie_id, hall_id, start_time, price)
+VALUES (1, 1, '2024-04-20 17:00:00', 2500.00);
+
+COMMIT;
+
+
+-- b) Қандай да бір атаумен транзакция бастау:
+DO $$ 
+DECLARE
+    transaction_name text := 'my_transaction_1';
+BEGIN
+    -- Транзакция бастау
+    RAISE NOTICE 'Starting transaction: %', transaction_name;
+    -- Өзгерістер енгізу
+	INSERT INTO users (first_name, last_name, email, role)
+VALUES ('Мадина', 'Сманова', 'madi@mail.kz', 'customer');
+END $$;
+    COMMIT;
+
+
+--c) Сақтау нүктесін (SAVEPOINT) құрастыру:
+BEGIN;
+
+INSERT INTO users (first_name, last_name, email, role)
+VALUES ('Динара', 'Адамбек', 'dinara@mail.kz', 'customer');
+
+SAVEPOINT my_savepoint;
+
+INSERT INTO sessions (movie_id, hall_id, start_time, price)
+VALUES (2, 1, '2024-04-22 20:00:00', 3000.00);
+
+-- Егер сеанс қосылса, сақтаймыз
+COMMIT;
+
+-- d) Сәтсіз транзакциядан кейін кері қайтаруды (ROLLBACK) орындау:
+-- Егер қате болса, сақталмаған өзгерістерді кері қайтару
+ROLLBACK TO my_savepoint;
+
+
+--e) Транзакцияның басқа элементтері:
+BEGIN;
+INSERT INTO movies (title, duration, release_date, rating)
+VALUES ('Өш', 120, '2024-06-01', 8.5);
+SAVEPOINT before_update;
+
+UPDATE movies SET rating = 9.0 WHERE title = 'Өш';
+
+-- Егер бағаны өзгерту сәтсіз болса, сақтау нүктесіне ораламыз
+ROLLBACK TO before_update;
+
+COMMIT;
+
+
+
+
